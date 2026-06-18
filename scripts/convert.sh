@@ -21,6 +21,7 @@
 #   codex        — OpenAI Codex CLI agent 文件 (.codex/agents/*.toml)
 #   deerflow     — DeerFlow 2.0 custom skill 文件 (skills/custom/<slug>/SKILL.md)
 #   workbuddy    — WorkBuddy skill 文件 (~/.workbuddy/skills/<slug>/SKILL.md)
+#   codewhale    — CodeWhale（原 DeepSeek-TUI）skill 文件 (~/.codewhale/skills/<slug>/SKILL.md)
 #   hermes       — Hermes Agent skill 文件 (~/.hermes/skills/<category>/<slug>/SKILL.md)
 #   kiro         — Kiro agent .md 文件 (.kiro/agents/*.md，带 YAML frontmatter)
 #   qoder        — Qoder 自定义智能体文件 (.qoder/agents/*.md)
@@ -495,6 +496,29 @@ ${body}
 HEREDOC
 }
 
+# CodeWhale（原 DeepSeek-TUI）—— skill 文件 ~/.codewhale/skills/<slug>/SKILL.md
+# CodeWhale 的 /skills 从该目录加载，frontmatter 用 name + description（与内置 skill 一致）
+convert_codewhale() {
+  local file="$1"
+  local description slug outdir outfile body
+
+  description="$(get_field "description" "$file")"
+  slug="$(slugify_from_file "$file")"
+  body="$(get_body "$file")"
+
+  outdir="$OUT_DIR/codewhale/$slug"
+  outfile="$outdir/SKILL.md"
+  mkdir -p "$outdir"
+
+  cat > "$outfile" <<HEREDOC
+---
+name: ${slug}
+description: ${description}
+---
+${body}
+HEREDOC
+}
+
 convert_hermes() {
   local file="$1"
   local name description slug body category outdir outfile
@@ -647,6 +671,7 @@ run_conversions() {
         codex)       convert_codex       "$file" ;;
         deerflow)    convert_deerflow    "$file" ;;
         workbuddy)   convert_workbuddy   "$file" ;;
+        codewhale)   convert_codewhale   "$file" ;;
         hermes)      convert_hermes      "$file" ;;
         kiro)        convert_kiro        "$file" ;;
         qoder)       convert_qoder       "$file" ;;
@@ -676,7 +701,7 @@ main() {
     esac
   done
 
-  local valid_tools=("antigravity" "gemini-cli" "opencode" "cursor" "trae" "aider" "windsurf" "openclaw" "qwen" "codex" "deerflow" "workbuddy" "hermes" "kiro" "qoder" "all")
+  local valid_tools=("antigravity" "gemini-cli" "opencode" "cursor" "trae" "aider" "windsurf" "openclaw" "qwen" "codex" "deerflow" "workbuddy" "codewhale" "hermes" "kiro" "qoder" "all")
   local valid=false
   for t in "${valid_tools[@]}"; do [[ "$t" == "$tool" ]] && valid=true && break; done
   if ! $valid; then
@@ -692,7 +717,7 @@ main() {
 
   local tools_to_run=()
   if [[ "$tool" == "all" ]]; then
-    tools_to_run=("antigravity" "gemini-cli" "opencode" "cursor" "trae" "aider" "windsurf" "openclaw" "qwen" "codex" "deerflow" "workbuddy" "hermes" "kiro" "qoder")
+    tools_to_run=("antigravity" "gemini-cli" "opencode" "cursor" "trae" "aider" "windsurf" "openclaw" "qwen" "codex" "deerflow" "workbuddy" "codewhale" "hermes" "kiro" "qoder")
   else
     tools_to_run=("$tool")
   fi
